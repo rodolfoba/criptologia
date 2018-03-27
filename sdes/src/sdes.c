@@ -45,16 +45,8 @@ void leftShift(BIT_ARRAY* entrada, int quantidade) {
 	bit_array_copy(parte1, 0, entrada, 0, 5);
 	bit_array_copy(parte2, 0, entrada, 5, 5);
 
-//	char parte1Texto[bit_array_length(parte1)];
-//	printf("parte1=%s\n", bit_array_to_str(parte1, parte1Texto));
-//	char parte2Texto[bit_array_length(parte2)];
-//	printf("parte2=%s\n", bit_array_to_str(parte2, parte2Texto));
-
 	bit_array_cycle_right(parte1, quantidade);
 	bit_array_cycle_right(parte2, quantidade);
-
-//	printf("parte1=%s\n", bit_array_to_str(parte1, parte1Texto));
-//	printf("parte2=%s\n", bit_array_to_str(parte2, parte2Texto));
 
 	bit_array_copy(entrada, 0, parte1, 0, 5);
 	bit_array_copy(entrada, 5, parte2, 0, 5);
@@ -118,49 +110,51 @@ BIT_ARRAY* funcaoF(BIT_ARRAY* entrada, BIT_ARRAY* subchave) {
 
 	BIT_ARRAY* s0Linha = bit_array_create(2);
 	bit_array_from_str(s0Linha, linhaS0);
-	char s0LinhaDecimal[2];
-	bit_array_to_decimal(s0Linha, s0LinhaDecimal, 2);
+	int s0LinhaDecimal = (int) strtol(linhaS0, NULL, 2);
 	printf("s0Linha=%s\n", bit_array_to_str(s0Linha, bits));
 
 	BIT_ARRAY* s0Coluna = bit_array_create(2);
 	bit_array_from_str(s0Coluna, colunaS0);
-	char s0ColunaDecimal[2];
-	bit_array_to_decimal(s0Coluna, s0ColunaDecimal, 2);
+	int s0ColunaDecimal = (int) strtol(colunaS0, NULL, 2);
 	printf("s0Coluna=%s\n", bit_array_to_str(s0Coluna, bits));
+
+	printf("s0LinhaDecimal=%d\n", s0LinhaDecimal);
+	printf("s0ColunaDecimal=%d\n", s0ColunaDecimal);
 
 	sprintf(linhaS1, "%d%d", bit_array_get_bit(s1, 0), bit_array_get_bit(s1, 3));
 	sprintf(colunaS1, "%d%d", bit_array_get_bit(s1, 1), bit_array_get_bit(s1, 2));
-	printf("linha=%s\n", linhaS1);
-
 
 	BIT_ARRAY* s1Linha = bit_array_create(2);
 	bit_array_from_str(s1Linha, linhaS1);
-	printf("s1Linhabits=%s\n", bit_array_to_str(s1Linha, bits));
-	char s1LinhaDecimal[3];
-	bit_array_to_decimal(s1Linha, s1LinhaDecimal, 3); // FIXME Aqui esta convertendo pra 2 ao inves de 1
+	int s1LinhaDecimal = (int) strtol(linhaS1, NULL, 2);
 	printf("s1Linha=%s\n", bit_array_to_str(s1Linha, bits));
-	printf("s1LinhaDecimal=%s\n", s1LinhaDecimal);
 
 	BIT_ARRAY* s1Coluna = bit_array_create(2);
 	bit_array_from_str(s1Coluna, colunaS1);
-	char s1ColunaDecimal[2];
-	bit_array_to_decimal(s1Coluna, s1ColunaDecimal, 2);
+	int s1ColunaDecimal = (int) strtol(colunaS1, NULL, 2);
 	printf("s1Coluna=%s\n", bit_array_to_str(s1Coluna, bits));
 
-	printf("s0LinhaDecimal=%s\n", s0LinhaDecimal);
-	printf("s0ColunaDecimal=%s\n", s0ColunaDecimal);
-	printf("s1ColunaDecimal=%s\n", s1ColunaDecimal);
+	printf("s1LinhaDecimal=%d\n", s1LinhaDecimal);
+	printf("s1ColunaDecimal=%d\n", s1ColunaDecimal);
 
+	int s0Valor = MATRIZ_S0[s0LinhaDecimal][s0ColunaDecimal];
+	int s1Valor = MATRIZ_S1[s1LinhaDecimal][s1ColunaDecimal];
+	printf("s0ValorMatriz=%d\n", s0Valor);
+	printf("s1ValorMatriz=%d\n", s1Valor);
 
-	char s0Valor[1] = {MATRIZ_S0[atoi(s0LinhaDecimal)][atoi(s0ColunaDecimal)]};
-	char s1Valor[1] = {MATRIZ_S1[atoi(s1LinhaDecimal)][atoi(s1ColunaDecimal)]};
+	char* s0ValorChar[2];
+	char* s1ValorChar[2];
+	sprintf(s0ValorChar, "%d", s0Valor);
+	sprintf(s1ValorChar, "%d", s1Valor);
 
 	BIT_ARRAY* s0Resultado = bit_array_create(2);
-	bit_array_from_decimal(s0Resultado, s0Valor);
+	bit_array_from_decimal(s0Resultado, s0ValorChar);
+	bit_array_reverse(s0Resultado);
 	printf("s0=%s\n", bit_array_to_str(s0Resultado, bits));
 
 	BIT_ARRAY* s1Resultado = bit_array_create(2);
-	bit_array_from_decimal(s1Resultado, s1Valor);
+	bit_array_from_decimal(s1Resultado, s1ValorChar);
+	bit_array_reverse(s1Resultado);
 	printf("s1=%s\n", bit_array_to_str(s1Resultado, bits));
 
 	// Juntar resultados de S0 e S1
@@ -178,20 +172,19 @@ BIT_ARRAY* funcaofk(BIT_ARRAY* entradaE, BIT_ARRAY* entradaD, BIT_ARRAY* subchav
 	char bits[bit_array_length(resultadoFuncaoF)];
 	printf("funcaoF=%s\n", bit_array_to_str(resultadoFuncaoF, bits));
 
-
 	BIT_ARRAY* resultadoXORfk = bit_array_create(bit_array_length(resultadoFuncaoF));
 	bit_array_xor(resultadoXORfk, entradaE, resultadoFuncaoF);
+	printf("XORfk=%s\n", bit_array_to_str(resultadoXORfk, bits));
+	printf("entradaD=%s\n", bit_array_to_str(entradaD, bits));
 
 	BIT_ARRAY* resultadofk = bit_array_create(bit_array_length(resultadoXORfk) + bit_array_length(entradaD));
 	bit_array_copy(resultadofk, 0, resultadoXORfk, 0, bit_array_length(resultadoXORfk));
-	bit_array_copy(resultadofk, bit_array_length(resultadoXORfk) + 1, entradaD, 0, bit_array_length(entradaD));
+	bit_array_copy(resultadofk, bit_array_length(resultadoXORfk), entradaD, 0, bit_array_length(entradaD));
 	return resultadofk;
 }
 
 BIT_ARRAY* iteracoes(BIT_ARRAY* entrada, BIT_ARRAY* subchave1, BIT_ARRAY* subchave2) {
 	char bits[8];
-//	printf("subchave1=%s\n", bit_array_to_str(subchave1, bits));
-//	printf("subchave2=%s\n", bit_array_to_str(subchave2, bits));
 
 	// separar metades esquerda e direita
 	BIT_ARRAY* esquerda = bit_array_create(4);
@@ -206,7 +199,9 @@ BIT_ARRAY* iteracoes(BIT_ARRAY* entrada, BIT_ARRAY* subchave1, BIT_ARRAY* subcha
 	bit_array_copy(esquerda, 0, resultadofk1, 0, 4);
 	bit_array_copy(direita, 0, resultadofk1, 4, 4);
 
-	return funcaofk(direita, esquerda, subchave2);
+	BIT_ARRAY* resultadofk2 = funcaofk(direita, esquerda, subchave2);
+	printf("fk2=%s\n", bit_array_to_str(resultadofk2, bits));
+	return resultadofk2;
 }
 
 BIT_ARRAY* criptografar(BIT_ARRAY* mensagem, BIT_ARRAY* chave) {
