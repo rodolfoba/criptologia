@@ -2,6 +2,8 @@ package com.github.rodolfoba.criptologia.k128;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
 
 import com.github.rodolfoba.criptologia.k128.algoritmo.K128;
 
@@ -32,13 +34,15 @@ public class Main {
         
         byte[] entrada = Files.readAllBytes(Paths.get(pathArquivo, nomeEntrada));
         
-        // Criptografar
+        Instant inicio = Instant.now();
         byte[] y = K128.criptografar(entrada, senha);
-        Files.write(Paths.get(pathArquivo, pathSaida, nomeEntrada + ".enc"), y);
-        
-        // Decriptografar
         byte[] z = K128.decriptografar(y, senha);
+        Instant fim = Instant.now();
+        System.out.println("Tempo (ms): " + Duration.between(inicio, fim).toMillis());
+        
+        Files.write(Paths.get(pathArquivo, pathSaida, nomeEntrada + ".enc"), y);
         Files.write(Paths.get(pathArquivo, pathSaida, nomeEntrada + ".dec"), z);
+        
         
         // Extraindo os 8 bits de um byte
 //        byte b = (byte) 0b10101001;

@@ -128,7 +128,7 @@ public class K128 {
         ChavePrincipalK chaveK = new ChavePrincipalK(senha);
         K128 k128 = new K128(chaveK, ITERACOES_N);
         
-        int quantidade = dados.length / 16;
+        int quantidade = (dados.length / 16);
         int resto = dados.length % 16;
         if (resto > 0) {
             quantidade++;
@@ -149,25 +149,36 @@ public class K128 {
         
         byte[] y = new byte[x.length + 16];
         byte[] xor = CBC_PAD;
+        quantidade++; // byte extra
         for (int i = 0; i < quantidade; i++) {
-            byte[] bloco = Arrays.copyOfRange(x, (16 * i), (16 * i) + 16);
-//            bloco = ByteUtil.fixedSizeXOR(bloco, xor, 16);
+            byte[] bloco; 
+            if (i == (quantidade - 1)) {
+                bloco = new byte[16];
+                byte pad = 0;
+                if (resto > 0) {
+                    pad = (byte) (16 - resto);
+                }
+                bloco[bloco.length - 1] = pad;
+            } else {
+                bloco = Arrays.copyOfRange(x, (16 * i), (16 * i) + 16);
+            }
+            bloco = ByteUtil.fixedSizeXOR(bloco, xor, 16);
 
             byte[] cripto = k128.criptografar(bloco);
             xor = cripto;
             System.arraycopy(cripto, 0, y, 16 * i, cripto.length);
         }
         
-        // adiciona bloco extra de controle
-        byte[] paddings = new byte[16];
-        byte pad = 0;
-        if (resto > 0) {
-            pad = (byte) (16 - resto);
-        }
-        
-        paddings[paddings.length - 1] = pad;
-        byte[] paddingsCripto = k128.criptografar(paddings);
-        System.arraycopy(paddingsCripto, 0, y, y.length - 16, paddingsCripto.length);
+//        // adiciona bloco extra de controle
+//        byte[] paddings = new byte[16];
+//        byte pad = 0;
+//        if (resto > 0) {
+//            pad = (byte) (16 - resto);
+//        }
+//        
+//        paddings[paddings.length - 1] = pad;
+//        byte[] paddingsCripto = k128.criptografar(paddings);
+//        System.arraycopy(paddingsCripto, 0, y, y.length - 16, paddingsCripto.length);
         
         return y;
     }
@@ -178,24 +189,25 @@ public class K128 {
         K128 k128 = new K128(chaveK, ITERACOES_N);
         
         byte pad = 0;
-        int quantidade = (y.length / 16) - 1;
-        byte[] x = new byte[(y.length - 16)];
+        int quantidade = (y.length / 16);
+        byte[] x = new byte[y.length];
         int i;
+        byte[] xor = CBC_PAD;
         for (i = 0; i < quantidade; i++) {
             byte[] bloco = Arrays.copyOfRange(y, (16 * i), (16 * i) + 16);
-            byte[] cripto = k128.decriptografar(bloco); 
+            byte[] decriptografado = k128.decriptografar(bloco); 
+            decriptografado = ByteUtil.fixedSizeXOR(decriptografado, xor, 16);
             
-            System.arraycopy(cripto, 0, x, 16 * i, cripto.length);
+            xor = bloco;
+            System.arraycopy(decriptografado, 0, x, 16 * i, decriptografado.length);
             
             if (i == (quantidade - 1)) {
-                pad = cripto[cripto.length - 1];
+                pad = decriptografado[decriptografado.length - 1];
             }
         }
         
         // Remove bytes de padding e bloco extra de controle;
-        x = Arrays.copyOfRange(x, 0, (x.length - 16) - pad);
-        
-        return x;
+        return Arrays.copyOfRange(x, 0, (x.length - 16) - pad);
     }
     
 }
