@@ -1,8 +1,10 @@
 package com.github.rodolfoba.criptologia.k128.algoritmo;
 
 import java.math.BigInteger;
+import java.text.MessageFormat;
 import java.util.Arrays;
 
+import com.github.rodolfoba.criptologia.k128.hamming.Hamming;
 import com.github.rodolfoba.criptologia.k128.util.ByteUtil;
 
 public class K128 {
@@ -37,56 +39,49 @@ public class K128 {
         chavesIntermediariasK = new byte[numeroDeIteracoes][];
     }
     
-    private byte[] criptografar(byte[] x) {
+    private byte[] criptografa(byte[] x) {
         BigInteger bintChaveK = new BigInteger(1, chaveK.getValor());
         BigInteger xor = bintChaveK.xor(BINT_CONSTANTE_XOR_K0);
         byte[] xorBytes = ByteUtil.fixedSizeByteArray(xor, (CONSTANTE_XOR_K0.length));
         
-//        System.out.println("ChaveK=" + bintChaveK.toString(16));
-//        System.out.println("ConstanteXORK0=" + BINT_CONSTANTE_XOR_K0.toString(16));
-//        System.out.println("K (XOR) Const=" + xor.toString(16));
-        
         for (byte i = 0; i < numeroDeIteracoes; i++) {
             if (0 == i) {
-                chavesIntermediariasK[i] = GeradorChaveIntermediariaK.gerar(xorBytes, i);
+                chavesIntermediariasK[i] = ChaveIntermediariaK.gerar(xorBytes, i);
             } else {
-                chavesIntermediariasK[i] = GeradorChaveIntermediariaK.gerar(chavesIntermediariasK[i - 1], i);
+                chavesIntermediariasK[i] = ChaveIntermediariaK.gerar(chavesIntermediariasK[i - 1], i);
             }
-//            System.out.println("ChaveK" + i + "=" + ByteUtil.parseHexString(chavesIntermediariasK[i]));
+            System.out.println("ChaveK(" + i + ") = " + ByteUtil.parseHexString(chavesIntermediariasK[i]));
             
             
             SubChaveKR5 kr5 = new SubChaveKR5(chavesIntermediariasK[i]);
             SubChaveKM32 km32 = new SubChaveKM32(chavesIntermediariasK[i]);
             x = umaIteracaoCriptografia(x, kr5, km32);
-//            System.out.println("X" + i + "=" + ByteUtil.parseHexString(x));
+            System.out.println("X(" + i + ") = " + ByteUtil.parseHexString(x));
         }
         
         return x;
     }
     
-    private byte[] decriptografar(byte[] y) {
+    private byte[] decriptografa(byte[] y) {
         BigInteger bintChaveK = new BigInteger(1, chaveK.getValor());
         BigInteger xor = bintChaveK.xor(BINT_CONSTANTE_XOR_K0);
         byte[] xorBytes = ByteUtil.fixedSizeByteArray(xor, (CONSTANTE_XOR_K0.length));
         
-//        System.out.println("ChaveK=" + bintChaveK.toString(16));
-//        System.out.println("ConstanteXORK0=" + BINT_CONSTANTE_XOR_K0.toString(16));
-//        System.out.println("K (XOR) Const=" + xor.toString(16));
-        
         for (byte i = 0; i < numeroDeIteracoes; i++) {
             if (0 == i) {
-                chavesIntermediariasK[i] = GeradorChaveIntermediariaK.gerar(xorBytes, i);
+                chavesIntermediariasK[i] = ChaveIntermediariaK.gerar(xorBytes, i);
             } else {
-                chavesIntermediariasK[i] = GeradorChaveIntermediariaK.gerar(chavesIntermediariasK[i - 1], i);
+                chavesIntermediariasK[i] = ChaveIntermediariaK.gerar(chavesIntermediariasK[i - 1], i);
             }
-//            System.out.println("ChaveK" + i + "=" + ByteUtil.parseHexString(chavesIntermediariasK[i]));
+            
+            System.out.println("ChaveK(" + i + ") = " + ByteUtil.parseHexString(chavesIntermediariasK[i]));
         }
         
         for (byte i = (byte) (numeroDeIteracoes - 1); i >= 0; i--) {
             SubChaveKR5 kr5 = new SubChaveKR5(chavesIntermediariasK[i]);
             SubChaveKM32 km32 = new SubChaveKM32(chavesIntermediariasK[i]);
             y = umaIteracaoDecriptografia(y, kr5, km32);
-//            System.out.println("Y" + i + "=" + ByteUtil.parseHexString(y));
+            System.out.println("Y(" + i + ") = " + ByteUtil.parseHexString(y));
         }
         
         return y;
@@ -127,24 +122,15 @@ public class K128 {
         Senha senha = new Senha(senhaTexto);
         ChavePrincipalK chaveK = new ChavePrincipalK(senha);
         K128 k128 = new K128(chaveK, ITERACOES_N);
+        BigInteger bintChaveK = new BigInteger(1, chaveK.getValor());
+        System.out.println("ChaveK = " + bintChaveK.toString(16));
         
         int quantidade = (dados.length / 16);
         int resto = dados.length % 16;
+        byte[] x = dados;
         if (resto > 0) {
             quantidade++;
-        }
-        
-        byte[] x = new byte[(16 * quantidade)];
-        System.arraycopy(dados, 0, x, 0, dados.length);
-        
-        // Realiza pad caso dados menor que 16 bytes
-        if (dados.length < 16) {
-            System.arraycopy(CBC_PAD, 0, x, dados.length, 16 - dados.length);
-        }
-        
-        // Realiza pad caso ultimo bloco seja menor que 16 bytes
-        if (resto > 0) {
-            System.arraycopy(CBC_PAD, 0, x, dados.length, (16 - resto));
+            x = normaliza(dados);
         }
         
         byte[] y = new byte[x.length + 16];
@@ -164,21 +150,10 @@ public class K128 {
             }
             bloco = ByteUtil.fixedSizeXOR(bloco, xor, 16);
 
-            byte[] cripto = k128.criptografar(bloco);
+            byte[] cripto = k128.criptografa(bloco);
             xor = cripto;
             System.arraycopy(cripto, 0, y, 16 * i, cripto.length);
         }
-        
-//        // adiciona bloco extra de controle
-//        byte[] paddings = new byte[16];
-//        byte pad = 0;
-//        if (resto > 0) {
-//            pad = (byte) (16 - resto);
-//        }
-//        
-//        paddings[paddings.length - 1] = pad;
-//        byte[] paddingsCripto = k128.criptografar(paddings);
-//        System.arraycopy(paddingsCripto, 0, y, y.length - 16, paddingsCripto.length);
         
         return y;
     }
@@ -187,6 +162,8 @@ public class K128 {
         Senha senha = new Senha(senhaTexto);
         ChavePrincipalK chaveK = new ChavePrincipalK(senha);
         K128 k128 = new K128(chaveK, ITERACOES_N);
+        BigInteger bintChaveK = new BigInteger(1, chaveK.getValor());
+        System.out.println("ChaveK = " + bintChaveK.toString(16));
         
         byte pad = 0;
         int quantidade = (y.length / 16);
@@ -195,7 +172,7 @@ public class K128 {
         byte[] xor = CBC_PAD;
         for (i = 0; i < quantidade; i++) {
             byte[] bloco = Arrays.copyOfRange(y, (16 * i), (16 * i) + 16);
-            byte[] decriptografado = k128.decriptografar(bloco); 
+            byte[] decriptografado = k128.decriptografa(bloco); 
             decriptografado = ByteUtil.fixedSizeXOR(decriptografado, xor, 16);
             
             xor = bloco;
@@ -208,6 +185,113 @@ public class K128 {
         
         // Remove bytes de padding e bloco extra de controle;
         return Arrays.copyOfRange(x, 0, (x.length - 16) - pad);
+    }
+    
+    public static void calcularAleatoriedadeMetodo1(byte[] bytes, String senhaTexto) {
+        calcularAleatoriedade(bytes, senhaTexto, false);
+    }
+    
+    public static void calcularAleatoriedadeMetodo2(byte[] bytes, String senhaTexto) {
+        calcularAleatoriedade(bytes, senhaTexto, true);
+    }
+    
+    private static void calcularAleatoriedade(byte[] bytes, String senhaTexto, boolean isModo2) {
+        if (bytes.length < (512 / 8)) {
+            throw new K128Exception("Entrada não possui 512 bits");
+        }
+        
+        bytes = normaliza(bytes);
+        int quantidadeDeBlocos512 = (bytes.length / (512 / 8));
+        if (bytes.length % (512 / 8) > 0) {
+            quantidadeDeBlocos512++;
+        }
+        
+        for (int k = 1; k <= quantidadeDeBlocos512; k++) {
+            byte[] vetEntra = Arrays.copyOfRange(bytes, ((k - 1) * 64), ((64 * k) <= bytes.length) ? (k * 64) : (k * 64) + (bytes.length % 64));
+            byte[] vetEntraC = criptografar(vetEntra, senhaTexto);
+            
+            byte[][] vetsAlterC = new byte[vetEntra.length * 8][];
+            
+            byte[] vetAlter = Arrays.copyOfRange(vetEntra, 0, vetEntra.length);
+            long[] somaH = new long[vetEntra.length / 16];
+            int[] max = new int[vetEntra.length / 16];
+            int[] min = new int[vetEntra.length / 16];
+            int[][] media = new int[vetEntra.length / 16][vetEntra.length * 8];
+            for (int j = 0; j < (vetEntra.length * 8); j++) {
+                vetAlter[(j / 8)] = Hamming.alteraBit(vetAlter[(j / 8)], (j % 8) == 0 ? 1 : j % 8);
+                
+                if (isModo2 && ((j / 8) < (vetEntra.length - 1))) {
+                    vetAlter[(j / 8) + 1] = Hamming.alteraBit(vetAlter[(j / 8) + 1], (j % 8) == 0 ? 1 : j % 8);
+                }
+                
+                vetsAlterC[j] = criptografar(vetAlter, senhaTexto);
+                
+                int quantidadeDeBlocos128 = vetEntra.length / 16;
+                System.out.println("Para j = " + (j + 1));
+
+                for (int i = 0; i < quantidadeDeBlocos128; i++) {
+                    byte[] blocoVetEntraC = Arrays.copyOfRange(vetEntraC, i * 16, 16 + (i * 16));
+                    byte[] blocoVetAlterC = Arrays.copyOfRange(vetsAlterC[j], i * 16, 16 + (i * 16));
+                    
+                    int distancia = Hamming.distancia(blocoVetEntraC, blocoVetAlterC);
+                    somaH[i] += distancia;
+                    if (i > 0 && (i % 4 > 0)) {
+                        somaH[i] += somaH[i - 1];
+                    }
+                    
+                    System.out.println(MessageFormat.format("H({0}) = {1}", i + 1, distancia));
+                    
+                    // min
+                    if (distancia < min[i] ) {
+                        min[i] = distancia;
+                    }
+                    
+                    // max
+                    if (distancia > max[i]) {
+                        max[i] = distancia;
+                    }
+                    
+                    // media
+                    media[i][j] = distancia;
+                }
+            }
+            
+            for (int c = 1; c <= min.length; c++) {
+                System.out.println(MessageFormat.format("SomaH({0}) = {1}", c, somaH[c - 1]));
+                System.out.println(MessageFormat.format("Min({0}) = {1}", c, min[c - 1]));
+                System.out.println(MessageFormat.format("Max({0}) = {1}", c, max[c - 1]));
+                
+                int total = 0;
+                for (int valor : media[c - 1]) {
+                    total += valor;
+                }
+                
+                System.out.println(MessageFormat.format("Media({0}) = {1}", c, (double) total / media[c - 1].length));
+            }
+        }
+    }
+    
+    private static byte[] normaliza(byte[] original) {
+        int quantidade = (original.length / 16);
+        int resto = original.length % 16;
+        if (resto > 0) {
+            quantidade++;
+        }
+        
+        byte[] normalizado = new byte[16 * quantidade];
+        System.arraycopy(original, 0, normalizado, 0, original.length);
+        
+        // Realiza pad caso dados menor que 16 bytes
+        if (original.length < 16) {
+            System.arraycopy(CBC_PAD, 0, normalizado, original.length, 16 - original.length);
+        }
+        
+        // Realiza pad caso ultimo bloco seja menor que 16 bytes
+        if (resto > 0) {
+            System.arraycopy(CBC_PAD, 0, normalizado, original.length, (16 - resto));
+        }
+        
+        return normalizado;
     }
     
 }

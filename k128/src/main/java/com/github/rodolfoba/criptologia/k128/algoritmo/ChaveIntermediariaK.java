@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import com.github.rodolfoba.criptologia.k128.util.ByteUtil;
 
-class GeradorChaveIntermediariaK {
+class ChaveIntermediariaK {
 
     private static final byte CONST_R = 0b10011;
     private static final int CONST_M = 0xCB3725F7;
@@ -15,11 +15,6 @@ class GeradorChaveIntermediariaK {
         y = Arrays.copyOfRange(entrada, 4, 8);
         z = Arrays.copyOfRange(entrada, 8, 12);
         w = Arrays.copyOfRange(entrada, 12, 16);
-        
-//        System.out.println("X=" + new BigInteger(1, x).toString(16));
-//        System.out.println("Y=" + new BigInteger(1, y).toString(16));
-//        System.out.println("Z=" + new BigInteger(1, z).toString(16));
-//        System.out.println("W=" + new BigInteger(1, w).toString(16));
         
         byte k5; 
         int k32;

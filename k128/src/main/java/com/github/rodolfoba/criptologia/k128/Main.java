@@ -2,6 +2,7 @@ package com.github.rodolfoba.criptologia.k128;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -13,6 +14,8 @@ public class Main {
 
     private static final String ARG_MODO_CRIPTOGRAFA = "-c";
     private static final String ARG_MODO_DECRIPTOGRAFA = "-d";
+    private static final String ARG_MODO_ALEATORIEDADE_1 = "-1";
+    private static final String ARG_MODO_ALEATORIEDADE_2 = "-2";
     private static final String ARG_ENTRADA = "-i";
     private static final String ARG_SAIDA = "-o";
     private static final String ARG_SENHA = "-p";
@@ -27,9 +30,8 @@ public class Main {
         // Modo
         boolean isModoCriptografa = args.contains(ARG_MODO_CRIPTOGRAFA);
         boolean isModoDecriptografa = args.contains(ARG_MODO_DECRIPTOGRAFA);
-        if ((isModoCriptografa && isModoDecriptografa) || (!isModoCriptografa && !isModoDecriptografa)) {
-            throw new IllegalArgumentException("Parametro modo invalido (-c ou -d)");
-        }
+        boolean isModoAleatoriedade1 = args.contains(ARG_MODO_ALEATORIEDADE_1);
+        boolean isModoAleatoriedade2 = args.contains(ARG_MODO_ALEATORIEDADE_2);
         
         String pathEntrada = args.get(args.indexOf(ARG_ENTRADA) + 1);
         String pathSaida = args.get(args.indexOf(ARG_SAIDA) + 1);
@@ -38,14 +40,33 @@ public class Main {
         
         Instant inicio = Instant.now();
         byte[] entrada = Files.readAllBytes(Paths.get(pathEntrada));
-        byte[] saida;
+        
         if (isModoCriptografa) {
-            saida = K128.criptografar(entrada, senha);
+            byte[] saida = K128.criptografar(entrada, senha);
+            Files.write(Paths.get(pathSaida), saida);
+        } else if(isModoDecriptografa) {
+            byte[] saida = K128.decriptografar(entrada, senha);
+            Files.write(Paths.get(pathSaida), saida);
+        } else if (isModoAleatoriedade1) {
+            K128.calcularAleatoriedadeMetodo1(entrada, senha);
+        } else if(isModoAleatoriedade2) {
+            K128.calcularAleatoriedadeMetodo2(entrada, senha);
         } else {
-            saida = K128.decriptografar(entrada, senha);
+            throw new IllegalArgumentException("Modo inválido");
         }
+        
         Instant fim = Instant.now();
-        Files.write(Paths.get(pathSaida), saida);
+        
+        if (isApagar) {
+            int size = (int) Files.size(Paths.get(pathEntrada));
+            byte[] bytes = new byte[size];
+            for (int i = 0; i < size; i++) {
+                bytes[i] = 0x20; 
+            }
+            System.out.println("Zerando e apagando arquivo...");
+            Files.write(Paths.get(pathEntrada), bytes, StandardOpenOption.TRUNCATE_EXISTING);
+            Files.deleteIfExists(Paths.get(pathEntrada));
+        }
         
         System.out.println("Tempo (ms): " + Duration.between(inicio, fim).toMillis());
     }
